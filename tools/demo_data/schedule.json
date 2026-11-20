@@ -1,1 +1,0 @@
-{"version": 7, "meds": [{"name": "sucre", "dose": "2", "color": "rouge", "slot": 2}], "doses": [{"slot": 2, "time": "20:00"}, {"slot": 2, "time": "08:00"}, {"slot": 2, "time": "13:00"}], "options": {"alarm": "fort", "brightness": 5, "lcd_msg": "prend tes med"}, "history": ["Ajout sucre", "Deverrouillage urgence"]}
