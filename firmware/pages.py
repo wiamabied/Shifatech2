@@ -1,6 +1,27 @@
 # Pages HTML. Tout est en ligne : aucun fichier, police ou script externe.
 # Design : mobile d'abord, cartes, barre de navigation en bas, mode sombre automatique.
-from config import VERSION, WEB_SLOTS, COLORS, ALARMS, MAX_DOSES_PER_MED
+from config import VERSION, WEB_SLOTS, ALARMS, MAX_DOSES_PER_MED
+from lang import AR
+
+# Langue de la requete en cours ("fr" ou "ar") et page affichee, fixees par web.App.handle().
+LANG = "fr"
+CUR = "/"
+
+
+def set_context(lang, path="/"):
+    global LANG, CUR
+    LANG = lang if lang in ("fr", "ar") else "fr"
+    CUR = path
+
+
+def t(fr):
+    """Traduit un texte francais (la cle) quand la langue courante est l'arabe."""
+    return AR.get(fr, fr) if LANG == "ar" else fr
+
+
+def comp(n):
+    """Nom d'un compartiment : Compartiment 1 / الحجرة 1."""
+    return "%s %s" % (t("Compartiment"), n)
 
 
 def esc(s):
@@ -19,8 +40,7 @@ def ascii_text(s, n=16):
     return "".join(c if 32 <= ord(c) < 127 else "?" for c in s)[:n]
 
 
-COLOR_HEX = {"rouge": "#e53935", "vert": "#43a047", "bleu": "#1e88e5",
-             "jaune": "#fdd835", "blanc": "#f5f5f5", "violet": "#8e24aa"}
+RED = "#e53935"   # tous les compartiments sont rouges
 ALARM_ICON = {"doux": "🔈", "normal": "🔉", "fort": "🔊"}
 
 CSS = (
@@ -42,12 +62,12 @@ CSS = (
     "border:2px solid var(--b);border-radius:12px;padding:8px 12px}"
     "input:focus,select:focus{outline:0;border-color:var(--p)}"
     "small{color:var(--m);font-size:14px}.er{color:var(--er);font-weight:600}.ok{color:var(--ok);font-weight:600}"
-    ".o{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:10px;"
+    ".o{display:inline-block;width:14px;height:14px;border-radius:50%;margin-inline-end:10px;"
     "border:1px solid #0003;flex:none}.O{width:44px;height:44px}"
     ".r{display:flex;align-items:center;padding:10px 0;border-top:1px solid var(--b)}.r:first-child{border:0}"
     ".r>div{flex:1}.p{opacity:.45}.two{display:flex;gap:10px}.two>*{flex:1}"
     ".h{display:inline-flex;align-items:center;background:var(--bg);border-radius:20px;padding:4px 12px;"
-    "margin:3px 6px 3px 0;font-weight:600}.h form{display:inline;margin-left:4px}"
+    "margin:3px 0;margin-inline-end:6px;font-weight:600}.h form{display:inline;margin-inline-start:4px}"
     ".h button{border:0;background:none;color:var(--er);font-size:18px;min-width:36px;min-height:36px;cursor:pointer}"
     ".sw,.pl{position:relative;display:inline-block;margin:4px}"
     ".sw input,.pl input{position:absolute;opacity:0;width:1px;min-height:0;height:1px}"
@@ -56,7 +76,7 @@ CSS = (
     ".pl span{display:block;min-width:54px;padding:12px 8px;text-align:center;border:2px solid var(--b);"
     "border-radius:12px;font-weight:600}.pl input:checked+span{background:var(--p);color:#fff;border-color:var(--p)}"
     ".g{display:flex;gap:8px}.g .pl{flex:1;margin:0}"
-    ".pg{display:grid;grid-template-columns:repeat(auto-fit,minmax(46px,1fr));gap:8px}.pg .pl{margin:0}"
+    ".pg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}.pg .pl{margin:0}"
     ".pg span{min-width:0}"
     ".n{background:linear-gradient(135deg,var(--p),#7c3aed);color:#fff}.n small{color:#ffffffd9}"
     ".tm{font-size:46px;font-weight:700;line-height:1.1}.lg{font-size:56px;text-align:center}"
@@ -69,7 +89,8 @@ CSS = (
     "padding-bottom:env(safe-area-inset-bottom)}"
     "nav a{flex:1;text-align:center;padding:8px 0 6px;font-size:12px;color:var(--m);text-decoration:none}"
     "nav b{display:block;font-size:24px}nav .on{color:var(--p);font-weight:700}"
-    "table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid var(--b);padding:8px;text-align:left}"
+    "table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid var(--b);padding:8px;text-align:start}"
+    ".lk{display:flex;justify-content:flex-end;gap:8px;font-size:15px}.lk a{padding:6px 12px;border-radius:16px;border:2px solid var(--b);color:var(--m);text-decoration:none;font-weight:600}.lk .on{background:var(--p);border-color:var(--p);color:#fff}"
     "footer{font-size:12px;color:var(--m);text-align:center;margin:28px 8px}"
     "@media print{.np{display:none}body{background:#fff;color:#000;padding:0}.c{box-shadow:none}}"
 )
@@ -85,63 +106,93 @@ NAV = (("/", "🏠", "Accueil"), ("/meds", "💊", "Médicaments"),
        ("/options", "⚙️", "Options"), ("/info", "ℹ️", "Infos"))
 
 
+def dot(color=None, big=False):
+    """Pastille de compartiment : toujours rouge, quelle que soit la couleur enregistree."""
+    return "<i class='o%s' style='background:%s'></i>" % (" O" if big else "", RED)
+
+
+def lang_bar():
+    cur = CUR if CUR not in ("/doses", "/setup", "/login") else ("/meds" if CUR == "/doses" else "/")
+    return ("<div class='lk np'>" + "".join(
+        "<a href='/lang?l=%s&amp;n=%s'%s>%s</a>" % (c, cur, " class='on'" if c == LANG else "", n)
+        for c, n in (("fr", "Français"), ("ar", "العربية"))) + "</div>")
+
+
 def page(title, body, nav=True, active="", js=""):
     n = ""
     if nav:
         n = "<nav class='np'>" + "".join(
-            "<a href='%s'%s><b>%s</b>%s</a>" % (u, " class='on'" if u == active else "", i, l)
+            "<a href='%s'%s><b>%s</b>%s</a>" % (u, " class='on'" if u == active else "", i, t(l))
             for u, i, l in NAV) + "</nav>"
-    return ("<!doctype html><html lang='fr'><head><meta charset='utf-8'>"
+    ar = LANG == "ar"
+    return ("<!doctype html><html lang='%s' dir='%s'><head><meta charset='utf-8'>" % (LANG, "rtl" if ar else "ltr") +
             "<meta name='viewport' content='width=device-width,initial-scale=1'>"
             "<meta name='theme-color' content='#2563eb'>"
             "<title>" + esc(title) + "</title><style>" + CSS + "</style></head><body><main>"
-            "<header><h1>" + esc(title) + "</h1></header>" + body +
-            "<footer>" + LEGAL + "</footer></main>" + n + "<script>" + JS + js + "</script></body></html>")
+            "<header>" + lang_bar() + "<h1>" + esc(title) + "</h1></header>" + body +
+            "<footer>" + t(LEGAL) + "</footer></main>" + n + "<script>" + JS + js + "</script></body></html>")
+
+
+def tb(label):
+    """Traduit un libelle de bouton qui peut commencer par un emoji."""
+    if " " in label and not label[0].isalnum():
+        e, _, rest = label.partition(" ")
+        return e + " " + t(rest)
+    return t(label)
 
 
 def form(csrf, action, inner, btn="Enregistrer", confirm=None, danger=False, cls=""):
-    on = (" onsubmit=\"return confirm('" + esc(confirm) + "')\"") if confirm else ""
+    on = (" onsubmit=\"return confirm('" + esc(t(confirm)) + "')\"") if confirm else ""
     c = "b" + (" d" if danger else "") + ((" " + cls) if cls else "")
     return ("<form method='post' action='" + action + "'" + on + ">"
             "<input type='hidden' name='csrf' value='" + esc(csrf) + "'>"
-            + inner + "<button class='" + c + "'>" + btn + "</button></form>")
+            + inner + "<button class='" + c + "'>" + tb(btn) + "</button></form>")
 
 
 def msgbar(ok=False, err=False, text=""):
     """Petit message qui apparait puis disparait tout seul (animation CSS, sans script)."""
     if ok:
-        return "<div class='t'>✓ " + (esc(text) or "Enregistré") + "</div>"
+        return "<div class='t'>✓ " + (esc(text) or t("Enregistré")) + "</div>"
     if err:
-        return "<div class='t e'>⚠ " + (esc(text) or "Vérifiez les champs et réessayez") + "</div>"
+        return "<div class='t e'>⚠ " + (esc(text) or t("Vérifiez les champs et réessayez")) + "</div>"
     return ""
-
-
-def dot(color, big=False):
-    return "<i class='o%s' style='background:%s'></i>" % (" O" if big else "", COLOR_HEX.get(color, "#999"))
 
 
 def fmt_delta(m):
     if m <= 0:
-        return "maintenant"
-    return "dans " + (("%d h %02d" % (m // 60, m % 60)) if m >= 60 else "%d min" % m)
+        return t("maintenant")
+    if m >= 60:
+        return "%s %d %s %02d" % (t("dans"), m // 60, t("h"), m % 60)
+    return "%s %d %s" % (t("dans"), m, t("min"))
+
+
+def hist_text(h):
+    """Evenement de l'historique (stocke en francais sans accent) affiche dans la langue courante."""
+    if LANG == "fr":
+        return h
+    for k in ("Ajout ",):
+        if h.startswith(k):
+            return t(k.strip()) + " " + h[len(k):]
+    return t(h)
 
 
 # ---------- connexion ----------
 def login_page(first, err=""):
-    intro = ("<p>Choisissez un mot de passe pour protéger le pilulier (6 caractères minimum).</p>"
-             if first else "<p>Entrez votre mot de passe pour continuer.</p>")
-    e = "<p class='er'>" + esc(err) + "</p>" if err else ""
-    return page("Bienvenue" if first else "Connexion",
+    intro = (t("<p>Choisissez un mot de passe pour protéger le pilulier (6 caractères minimum).</p>")
+             if first else t("<p>Entrez votre mot de passe pour continuer.</p>"))
+    e = "<p class='er'>" + esc(t(err)) + "</p>" if err else ""
+    return page(t("Bienvenue") if first else t("Connexion"),
                 "<div class='c'><div class='lg'>💊</div>" + intro + e + "<form method='post'>"
-                "<label>Mot de passe</label><input type='password' name='pwd' required autofocus>"
-                + ("<label>Confirmer le mot de passe</label><input type='password' name='pwd2' required>"
-                   if first else "") + "<button class='b'>Valider</button></form></div>", nav=False)
+                "<label>" + t("Mot de passe") + "</label><input type='password' name='pwd' required autofocus>"
+                + ("<label>" + t("Confirmer le mot de passe") + "</label><input type='password' name='pwd2' required>"
+                   if first else "") + "<button class='b'>" + t("Valider") + "</button></form></div>", nav=False)
 
 
 # ---------- accueil ----------
-COUNTDOWN = ("var c=document.getElementById('cd');if(c){var m=+c.dataset.m,s=Date.now();function u(){"
-             "var r=m-Math.floor((Date.now()-s)/60000);c.textContent=r<=0?'maintenant':'dans '+"
-             "(r>=60?Math.floor(r/60)+' h '+('0'+r%60).slice(-2):r+' min')}u();setInterval(u,20000)}")
+def countdown_js():
+    return ("var c=document.getElementById('cd');if(c){var m=+c.dataset.m,s=Date.now();function u(){"
+            "var r=m-Math.floor((Date.now()-s)/60000);c.textContent=r<=0?'" + t("maintenant") + "':'" + t("dans") + " '+"
+            "(r>=60?Math.floor(r/60)+' " + t("h") + " '+('0'+r%60).slice(-2):r+' " + t("min") + "')}u();setInterval(u,20000)}")
 
 
 def home_page(meds, history, unlock_text="", csrf="", nxt=None, hello="Bonjour", today=()):
@@ -149,32 +200,32 @@ def home_page(meds, history, unlock_text="", csrf="", nxt=None, hello="Bonjour",
     if unlock_text:
         body += "<div class='c ok'>🔓 " + esc(unlock_text) + "</div>"
     if not meds:
-        body += ("<div class='c'><p><b>Bienvenue !</b> Ajoutez votre premier médicament pour commencer.</p>"
-                 "<a class='b' href='/meds'>➕ Ajouter un médicament</a></div>")
+        body += ("<div class='c'><p>" + t("<b>Bienvenue !</b> Ajoutez votre premier médicament pour commencer.") + "</p>"
+                 "<a class='b' href='/meds'>➕ " + t("Ajouter un médicament") + "</a></div>")
     elif nxt is None:
-        body += ("<div class='c'><p>Aucun horaire n'est réglé pour l'instant.</p>"
-                 "<a class='b' href='/meds'>🕐 Régler les horaires</a></div>")
+        body += ("<div class='c'><p>" + t("Aucun horaire n'est réglé pour l'instant.") + "</p>"
+                 "<a class='b' href='/meds'>🕐 " + t("Régler les horaires") + "</a></div>")
     else:
-        d, t, m, tom = nxt
-        body += ("<div class='c n'><small>Prochaine prise</small><div class='tm'>%s</div>"
-                 "<div><b>%s</b> %s</div><small>Compartiment %s · <span id='cd' data-m='%d'>%s</span>%s</small></div>"
-                 % (esc(t), esc(m["name"]), esc(m["dose"]), m["slot"], d, fmt_delta(d),
-                    " · demain" if tom else ""))
+        d, tm, m, tom = nxt
+        body += ("<div class='c n'><small>%s</small><div class='tm'>%s</div>"
+                 "<div><b>%s</b> %s</div><small>%s · <span id='cd' data-m='%d'>%s</span>%s</small></div>"
+                 % (t("Prochaine prise"), esc(tm), esc(m["name"]), esc(m["dose"]), comp(m["slot"]), d,
+                    fmt_delta(d), (" · " + t("demain")) if tom else ""))
     if today:
-        rows = "".join("<div class='r%s'>%s<div><b>%s</b> %s</div><small>C%s</small></div>"
-                       % (" p" if past else "", dot(m["color"]), esc(t), esc(m["name"]), m["slot"])
-                       for t, m, past in today[:12])
-        more = ("<small>+%d autres prises : voir la fiche</small>" % (len(today) - 12)) if len(today) > 12 else ""
-        body += "<h2>Aujourd'hui</h2><div class='c'>" + rows + more + "</div>"
+        rows = "".join("<div class='r%s'>%s<div><b>%s</b> %s</div><small>%s</small></div>"
+                       % (" p" if past else "", dot(), esc(tm), esc(m["name"]), comp(m["slot"]))
+                       for tm, m, past in today[:12])
+        more = ("<small>+%d %s</small>" % (len(today) - 12, t("autres prises : voir la fiche"))) if len(today) > 12 else ""
+        body += "<h2>" + t("Aujourd'hui") + "</h2><div class='c'>" + rows + more + "</div>"
     if history:
-        body += ("<h2>Derniers événements</h2><div class='c'>"
-                 + "".join("<div class='r'><small>%s</small></div>" % esc(h) for h in reversed(history[-5:]))
+        body += ("<h2>" + t("Derniers événements") + "</h2><div class='c'>"
+                 + "".join("<div class='r'><small>%s</small></div>" % esc(hist_text(h)) for h in reversed(history[-5:]))
                  + "</div>")
-    body += ("<h2>Outils</h2><a class='b s' href='/fiche'>🖨️ Fiche de remplissage</a>"
-             "<a class='b s' href='/heure'>🕐 Régler l'heure</a><h2>Urgence</h2>"
+    body += ("<h2>" + t("Outils") + "</h2><a class='b s' href='/fiche'>🖨️ " + t("Fiche de remplissage") + "</a>"
+             "<a class='b s' href='/heure'>🕐 " + t("Régler l'heure") + "</a><h2>" + t("Urgence") + "</h2>"
              + form(csrf, "/unlock", "", "🔓 Déverrouillage d'urgence",
                     "Déverrouiller le boîtier pour quelques minutes ?", True))
-    return page(hello + " 👋", body, active="/", js=COUNTDOWN)
+    return page(t(hello) + " 👋", body, active="/", js=countdown_js())
 
 
 # ---------- medicaments ----------
@@ -182,70 +233,68 @@ def meds_page(meds, csrf, msg="", doses=(), open_add=False):
     rows = ""
     for m in sorted(meds, key=lambda x: x["slot"]):
         times = sorted(d["time"] for d in doses if d["slot"] == m["slot"])
-        chips = "".join("<span class='h'>%s</span>" % esc(t) for t in times) or "<small>Aucun horaire</small>"
-        rows += ("<div class='c'><div class='r'>" + dot(m["color"], True)
-                 + "<div><b>%s</b> %s<br><small>Compartiment %s</small></div></div><div>%s</div>"
-                 % (esc(m["name"]), esc(m["dose"]), m["slot"], chips)
-                 + "<div class='two'><a class='b s sm' href='/doses?edit=%s'>🕐 Horaires</a>" % m["slot"]
+        chips = "".join("<span class='h'>%s</span>" % esc(x) for x in times) or "<small>" + t("Aucun horaire") + "</small>"
+        rows += ("<div class='c'><div class='r'>" + dot(big=True)
+                 + "<div><b>%s</b><br>%s %s</div></div><div>%s</div>"
+                 % (comp(m["slot"]), esc(m["name"]), esc(m["dose"]), chips)
+                 + "<div class='two'><a class='b s sm' href='/doses?edit=%s'>🕐 %s</a>" % (m["slot"], t("Horaires"))
                  + form(csrf, "/meds/del", "<input type='hidden' name='slot' value='%s'>" % m["slot"],
                         "🗑️ Supprimer", "Supprimer ce médicament ?", True, "sm") + "</div></div>")
     used = [m["slot"] for m in meds]
     free = [i for i in range(1, WEB_SLOTS + 1) if i not in used]
     if free:
-        colors = "".join("<label class='sw' title='%s'><input type='radio' name='color' value='%s'%s>"
-                         "<i style='background:%s'></i></label>"
-                         % (c, c, " checked" if k == 0 else "", COLOR_HEX.get(c, "#999"))
-                         for k, c in enumerate(COLORS))
-        slots = "".join("<label class='pl'><input type='radio' name='slot' value='%d'%s><span>%d</span></label>"
-                        % (i, " checked" if k == 0 else "", i) for k, i in enumerate(free))
-        add = ("<details class='c'%s><summary>➕ Ajouter un médicament</summary>"
-               % (" open" if (open_add or not meds) else "")
-               + form("%s" % csrf, "/meds",
-                      "<label>Nom du médicament</label><input name='name' maxlength='30' required>"
-                      "<label>Dose (par exemple : 1 comprimé)</label><input name='dose' maxlength='20'>"
-                      "<label>Couleur de la lumière</label><div>" + colors + "</div>"
-                      "<label>Compartiment</label><div class='pg'>" + slots + "</div>", "Ajouter") + "</details>")
+        slots = "".join("<label class='pl'><input type='radio' name='slot' value='%d'%s><span>%s</span></label>"
+                        % (i, " checked" if k == 0 else "", comp(i)) for k, i in enumerate(free))
+        add = ("<details class='c'%s><summary>➕ %s</summary>"
+               % (" open" if (open_add or not meds) else "", t("Ajouter un médicament"))
+               + form(csrf, "/meds",
+                      "<label>" + t("Nom du médicament") + "</label><input name='name' maxlength='30' required>"
+                      "<label>" + t("Dose (par exemple : 1 comprimé)") + "</label><input name='dose' maxlength='20'>"
+                      "<label>" + t("Compartiment") + "</label><div class='pg'>" + slots + "</div>",
+                      "Ajouter") + "</details>")
     else:
-        add = "<div class='c'>Tous les compartiments sont utilisés.</div>"
-    return page("Médicaments", msg + rows + add, active="/meds")
+        add = "<div class='c'>" + t("Tous les compartiments sont utilisés.") + "</div>"
+    return page(t("Médicaments"), msg + rows + add, active="/meds")
 
 
 def doses_page(med, times, csrf, msg=""):
     chips = ""
-    for t in sorted(times):
+    for x in sorted(times):
         chips += ("<span class='h'>%s<form method='post' action='/doses/del' "
-                  "onsubmit=\"return confirm('Supprimer cette prise ?')\">"
+                  "onsubmit=\"return confirm('%s')\">"
                   "<input type='hidden' name='csrf' value='%s'><input type='hidden' name='slot' value='%s'>"
-                  "<input type='hidden' name='time' value='%s'><button aria-label='Supprimer'>✕</button>"
-                  "</form></span>" % (esc(t), esc(csrf), med["slot"], esc(t)))
-    chips = chips or "<small>Aucune prise pour l'instant.</small>"
-    head = ("<div class='c'><div class='r'>" + dot(med["color"], True)
-            + "<div><b>%s</b> %s<br><small>Compartiment %s</small></div></div><div>%s</div></div>"
-            % (esc(med["name"]), esc(med["dose"]), med["slot"], chips))
+                  "<input type='hidden' name='time' value='%s'><button aria-label='%s'>✕</button>"
+                  "</form></span>" % (esc(x), esc(t("Supprimer cette prise ?")), esc(csrf), med["slot"], esc(x),
+                                      esc(t("Supprimer"))))
+    chips = chips or "<small>" + t("Aucune prise pour l'instant.") + "</small>"
+    head = ("<div class='c'><div class='r'>" + dot(big=True)
+            + "<div><b>%s</b><br>%s %s</div></div><div>%s</div></div>"
+            % (comp(med["slot"]), esc(med["name"]), esc(med["dose"]), chips))
     if len(times) < MAX_DOSES_PER_MED:
         add = ("<div class='c'>" + form(
             csrf, "/doses", "<input type='hidden' name='slot' value='%s'>"
-            "<label>Nouvelle heure de prise</label><input type='time' name='time' required>" % med["slot"],
+            "<label>%s</label><input type='time' name='time' required>" % (med["slot"], t("Nouvelle heure de prise")),
             "➕ Ajouter cette heure") + "</div>")
     else:
-        add = "<div class='c'>Maximum de %d prises par jour atteint.</div>" % MAX_DOSES_PER_MED
-    return page("Horaires", msg + head + add + "<a class='b s' href='/meds'>← Retour</a>", active="/meds")
+        add = "<div class='c'>" + (t("Maximum de %d prises par jour atteint.") % MAX_DOSES_PER_MED) + "</div>"
+    return page(t("Horaires"), msg + head + add + "<a class='b s' href='/meds'>" + t("← Retour") + "</a>",
+                active="/meds")
 
 
 # ---------- options, heure, mot de passe, infos, fiche ----------
 def options_page(opts, csrf, msg=""):
     cur = opts.get("alarm", "normal")
     seg = "".join("<label class='pl'><input type='radio' name='alarm' value='%s'%s><span>%s<br>%s</span></label>"
-                  % (a, " checked" if a == cur else "", ALARM_ICON.get(a, ""), a.capitalize()) for a in ALARMS)
+                  % (a, " checked" if a == cur else "", ALARM_ICON.get(a, ""), t(a.capitalize())) for a in ALARMS)
     b = esc(opts.get("brightness", 5))
-    return page("Options", msg + "<div class='c'>" + form(
+    return page(t("Options"), msg + "<div class='c'>" + form(
         csrf, "/options",
-        "<label>Alarme</label><div class='g'>" + seg + "</div>"
-        "<label>Luminosité de l'écran : <b>" + b + "</b></label>"
+        "<label>" + t("Alarme") + "</label><div class='g'>" + seg + "</div>"
+        "<label>" + t("Luminosité de l'écran :") + " <b>" + b + "</b></label>"
         "<input type='range' name='brightness' min='1' max='10' value='" + b + "' "
         "oninput=\"this.previousElementSibling.lastElementChild.textContent=this.value\">"
-        "<label>Message sur l'écran du boîtier (16 lettres, sans accent)</label>"
-        "<input name='lcd_msg' maxlength='16' value='" + esc(opts.get("lcd_msg", "")) + "'>") + "</div>",
+        "<label>" + t("Message sur l'écran du boîtier (16 lettres, sans accent)") + "</label>"
+        "<input name='lcd_msg' maxlength='16' dir='ltr' value='" + esc(opts.get("lcd_msg", "")) + "'>") + "</div>",
         active="/options")
 
 
@@ -256,40 +305,43 @@ CLOCK = ("function u(){var d=new Date(),p=function(n){return('0'+n).slice(-2)};"
 
 
 def heure_page(csrf, msg="", box=""):
-    boxline = ("<p>Heure du boîtier : <b>%s</b></p>" % esc(box)) if box else ""
-    return page("Heure", msg + "<div class='c'><small>Heure de votre téléphone</small>"
-                "<div class='tm' id='h'>--:--:--</div>" + boxline
+    boxline = ("<p>%s <b>%s</b></p>" % (t("Heure du boîtier :"), esc(box))) if box else ""
+    return page(t("Heure"), msg + "<div class='c'><small>" + t("Heure de votre téléphone") + "</small>"
+                "<div class='tm' id='h' dir='ltr'>--:--:--</div>" + boxline
                 + form(csrf, "/heure", "<input type='hidden' name='epoch' id='e'>",
                        "🕐 Régler le boîtier sur cette heure") + "</div>", active="/", js=CLOCK)
 
 
 def password_page(csrf, msg=""):
-    return page("Mot de passe", msg + "<div class='c'>" + form(
+    return page(t("Mot de passe"), msg + "<div class='c'>" + form(
         csrf, "/password",
-        "<label>Mot de passe actuel</label><input type='password' name='old' required>"
-        "<label>Nouveau mot de passe (6 caractères minimum)</label><input type='password' name='new' required>"
-        "<label>Confirmer le nouveau mot de passe</label><input type='password' name='new2' required>")
-        + "</div><a class='b s' href='/info'>← Retour</a>", active="/info")
+        "<label>" + t("Mot de passe actuel") + "</label><input type='password' name='old' required>"
+        "<label>" + t("Nouveau mot de passe (6 caractères minimum)") + "</label><input type='password' name='new' required>"
+        "<label>" + t("Confirmer le nouveau mot de passe") + "</label><input type='password' name='new2' required>")
+        + "</div><a class='b s' href='/info'>" + t("← Retour") + "</a>", active="/info")
 
 
 def info_page(ssid):
-    return page("Informations",
+    return page(t("Informations"),
                 "<div class='c'><div class='r'><div>Wi-Fi</div><b>%s</b></div>"
-                "<div class='r'><div>Adresse</div><b>192.168.4.1</b></div>"
-                "<div class='r'><div>Version</div><b>%s</b></div></div>"
-                "<p><small>Astuce : ajoutez cette page à l'écran d'accueil de votre téléphone "
-                "pour l'ouvrir en un geste.</small></p>"
-                "<a class='b s' href='/password'>🔑 Changer le mot de passe</a>"
-                "<a class='b s' href='/logout'>🚪 Quitter</a>" % (esc(ssid), esc(VERSION)), active="/info")
+                "<div class='r'><div>%s</div><b dir='ltr'>192.168.4.1</b></div>"
+                "<div class='r'><div>%s</div><b>%s</b></div></div>"
+                "<p><small>%s</small></p>"
+                "<a class='b s' href='/password'>🔑 %s</a>"
+                "<a class='b s' href='/logout'>🚪 %s</a>"
+                % (esc(ssid), t("Adresse"), t("Version"), esc(VERSION),
+                   t("Astuce : ajoutez cette page à l'écran d'accueil de votre téléphone pour l'ouvrir en un geste."),
+                   t("Changer le mot de passe"), t("Quitter")), active="/info")
 
 
 def fiche_page(meds, doses):
     rows = ""
     for m in sorted(meds, key=lambda x: x["slot"]):
         times = ", ".join(sorted(d["time"] for d in doses if d["slot"] == m["slot"]))
-        rows += ("<tr><td>%s</td><td><b>%s</b> %s</td><td>%s%s</td><td>%s</td></tr>"
-                 % (m["slot"], esc(m["name"]), esc(m["dose"]), dot(m["color"]), esc(m["color"]), esc(times)))
-    return page("Fiche de remplissage",
-                "<div class='c'><table><tr><th>N°</th><th>Médicament</th><th>Couleur</th><th>Horaires</th></tr>"
-                + rows + "</table></div><button class='b np' onclick='window.print()'>🖨️ Imprimer</button>"
-                "<a class='b s np' href='/'>← Retour</a>", active="/")
+        rows += ("<tr><td>%s</td><td><b>%s</b> %s</td><td>%s%s</td><td dir='ltr'>%s</td></tr>"
+                 % (comp(m["slot"]), esc(m["name"]), esc(m["dose"]), dot(), esc(t("rouge")), esc(times)))
+    return page(t("Fiche de remplissage"),
+                "<div class='c'><table><tr><th>" + t("Compartiment") + "</th><th>" + t("Médicament") + "</th><th>"
+                + t("Couleur") + "</th><th>" + t("Horaires") + "</th></tr>"
+                + rows + "</table></div><button class='b np' onclick='window.print()'>🖨️ " + t("Imprimer") + "</button>"
+                "<a class='b s np' href='/'>" + t("← Retour") + "</a>", active="/")

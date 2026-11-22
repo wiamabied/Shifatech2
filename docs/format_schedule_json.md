@@ -5,7 +5,7 @@ L'interface écrit ce fichier. `version` augmente de 1 à chaque modification r�
 ```json
 {
   "version": 2,
-  "meds":    [{"name": "Doliprane", "dose": "500mg", "color": "bleu", "slot": 1}],
+  "meds":    [{"name": "Doliprane", "dose": "500mg", "color": "rouge", "slot": 1}],
   "doses":   [{"slot": 1, "time": "08:00"}],
   "options": {"alarm": "normal", "brightness": 5, "lcd_msg": ""},
   "history": ["Ajout Doliprane"]
@@ -15,7 +15,7 @@ L'interface écrit ce fichier. `version` augmente de 1 à chaque modification r�
 | Champ | Contenu |
 |---|---|
 | `meds[].slot` | compartiment, 1 à `WEB_SLOTS` (6) |
-| `meds[].color` | rouge, vert, bleu, jaune, blanc ou violet |
+| `meds[].color` | toujours `rouge` (tous les compartiments sont rouges ; l'ancienne valeur est ignorée à l'affichage) |
 | `doses[]` | une prise : compartiment et heure « HH:MM » (5 par médicament au maximum) |
 | `options.alarm` | doux, normal ou fort |
 | `options.brightness` | 1 à 10 |

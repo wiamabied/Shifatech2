@@ -10,8 +10,8 @@ Ouvrez `firmware/config.py` et changez `WIFI_PASSWORD` (8 caractères minimum). 
 Puis régénérez le QR code : `pip install segno` puis `python3 tools/qr_wifi.py` (fichier `qr_wifi.png`, à imprimer sur le boîtier ou la notice). Testez-le avec un téléphone.
 
 ## 3. Copier les fichiers
-Dans Thonny, copiez ces 5 fichiers de `firmware/` à la racine du Pico W (clic droit, « Upload to / ») :
-`config.py`, `store.py`, `pages.py`, `web.py`, `main.py`.
+Dans Thonny, copiez ces 6 fichiers de `firmware/` à la racine du Pico W (clic droit, « Upload to / ») :
+`config.py`, `lang.py`, `store.py`, `pages.py`, `web.py`, `main.py`.
 `main.py` se lance tout seul au démarrage. Ne copiez ni `tests/` ni `tools/`.
 
 ## 4. Première connexion

@@ -31,6 +31,29 @@ class WebTest(unittest.TestCase):
     def add_med(self, h, name="Doliprane", slot=1):
         return self.post(h, "/meds", name=name, dose="500mg", color="bleu", slot=slot)
 
+    # --- langue et compartiments rouges ---
+    def test_choix_de_la_langue_arabe_puis_francais(self):
+        h = self.login()
+        r = self.app.handle("GET", "/lang?l=ar&n=/meds", {}, b"")          # sans mot de passe, meme a la connexion
+        self.assertEqual((r[0], r[3][0][1]), (303, "/meds"))
+        ck = [v for k, v in r[3] if k == "Set-Cookie"][0].split(";")[0]
+        self.assertEqual(ck, "lang=ar")
+        r = self.app.handle("GET", "/meds", dict(cookie=h["cookie"] + "; " + ck), b"")
+        self.assertIn("dir='rtl'", r[2])
+        self.assertIn("الأدوية", r[2])
+        r = self.app.handle("GET", "/meds", dict(cookie=h["cookie"] + "; lang=fr"), b"")
+        self.assertIn("dir='ltr'", r[2])
+
+    def test_lang_refuse_redirection_externe_et_langue_inconnue(self):
+        r = self.app.handle("GET", "/lang?l=xx&n=//evil.com", {}, b"")
+        self.assertEqual(r[3][0][1], "/")
+        self.assertFalse([1 for k, v in r[3] if k == "Set-Cookie"])
+
+    def test_medicament_toujours_rouge(self):
+        h = self.login()
+        self.add_med(h)                                   # le formulaire envoie color=bleu : ignore
+        self.assertEqual(self.app.s.data["meds"][0]["color"], "rouge")
+
     # --- acces et securite ---
     def test_premier_demarrage_redirige_vers_setup(self):
         r = self.app.handle("GET", "/", {}, b"")

@@ -14,13 +14,13 @@ Le Wi-Fi s'éteint seul après environ 10 minutes sans utilisation. Un nouvel ap
 En haut, la carte bleue indique la **prochaine prise** : l'heure, le médicament, le compartiment et le temps restant. Dessous, la liste « Aujourd'hui » montre toutes les prises du jour ; celles dont l'heure est passée sont en gris clair. La barre en bas de l'écran permet d'aller aux médicaments, aux options et aux informations.
 
 ## Ajouter un médicament
-Menu « Médicaments », puis « ➕ Ajouter un médicament » : écrivez le nom et la dose, touchez la **couleur** de la lumière et le **numéro du compartiment**, puis « Ajouter ». Un compartiment contient un seul médicament. La lumière de cette couleur s'allume sur le boîtier quand il faut le prendre.
+Menu « Médicaments », puis « ➕ Ajouter un médicament » : écrivez le nom et la dose, touchez le **compartiment** voulu (« Compartiment 1 », « Compartiment 2 », etc.), puis « Ajouter ». Un compartiment contient un seul médicament. Tous les compartiments sont **rouges** : la lumière rouge du compartiment concerné s'allume sur le boîtier quand il faut prendre le médicament.
 
 ## Choisir les heures de prise
 Dans « Médicaments », appuyez sur « Horaires » sous le médicament, puis ajoutez l'heure. Il y a au plus 5 prises par jour pour chaque médicament.
 
 ## Remplir les compartiments
-Sur l'accueil, « Fiche de remplissage » donne la liste : compartiment, médicament, couleur, horaires. Vous pouvez l'imprimer.
+Sur l'accueil, « Fiche de remplissage » donne la liste : compartiment, médicament, couleur (rouge), horaires. Vous pouvez l'imprimer.
 
 ## Autres réglages
 - **Options** : force de l'alarme (doux, normal, fort), luminosité et message de l'écran.
@@ -34,3 +34,8 @@ Sur l'accueil, « Fiche de remplissage » donne la liste : compartiment, médica
 - Mot de passe oublié : contactez l'équipe du projet.
 
 *Prototype d'aide à l'observance, pas un dispositif médical, aucun conseil médical.*
+
+
+## Changer de langue
+
+En haut de chaque page, touchez **Français** ou **العربية** pour changer la langue de l'interface. En arabe, la page s'affiche de droite à gauche. Le choix est mémorisé sur votre téléphone. Le message de l'écran du boîtier reste en lettres latines (16 caractères, sans accent).

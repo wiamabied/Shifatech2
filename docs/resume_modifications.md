@@ -34,3 +34,10 @@ Mot de passe haché et salé (SHA-256), jeton CSRF sur chaque formulaire (un jet
 - Format de `schedule.json` à valider avec le responsable du boîtier.
 - Non réalisés : alertes marquées comme lues, export CSV, sauvegarde et restauration, page de test du buzzer.
 - Le déverrouillage d'urgence est enregistré dans l'historique ; son effet sur le verrou doit être lu par `box.py` (l'interface ne pilote pas le matériel).
+
+
+## Version compartiments rouges + langues
+
+- **Compartiments** : plus de choix de couleur, tous les compartiments sont rouges (`color` forcé à `rouge`). Ils sont nommés « Compartiment 1 », « Compartiment 2 », etc. (« الحجرة 1 », « الحجرة 2 » en arabe) dans toutes les pages.
+- **Langues** : français et arabe (boutons en haut de chaque page, route `/lang`, cookie `lang`). L'arabe s'affiche en RTL. Toutes les traductions sont dans `firmware/lang.py`.
+- **Tests** : nouveaux tests (compartiments rouges, RTL, sélecteur de langue, absence de texte français en arabe).

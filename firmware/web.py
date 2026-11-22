@@ -3,7 +3,7 @@
 import hashlib, os, json, time
 from binascii import hexlify
 from config import (WEB_SLOTS, MAX_DOSES_PER_MED, MAX_FAILS, LOCK_SECONDS, UNLOCK_SECONDS,
-                    HISTORY_MAX, WIFI_SSID, COLORS, ALARMS, MAX_SESSIONS)
+                    HISTORY_MAX, WIFI_SSID, ALARMS, MAX_SESSIONS, LANGS, DEFAULT_LANG)
 import pages as P
 
 
@@ -123,6 +123,19 @@ class App:
             return (204, "text/plain", "", ())
         q = parse_qs(qs)
         form = parse_qs(body.decode("utf-8", "ignore")) if method == "POST" else {}
+        cookie = headers.get("cookie", "")
+        lang = DEFAULT_LANG
+        for l in LANGS:
+            if "lang=" + l in cookie:
+                lang = l
+        P.set_context(lang, path)
+
+        if path == "/lang":                                     # choix de la langue (sans mot de passe)
+            l, n = q.get("l", ""), q.get("n", "/")
+            if not n.startswith("/") or n.startswith("//"):
+                n = "/"
+            ck = (("Set-Cookie", "lang=%s; Path=/; Max-Age=31536000; SameSite=Strict" % l),) if l in LANGS else ()
+            return redirect(n, ck)
 
         if self.auth is None:                                   # premier demarrage
             if path != "/setup":
@@ -148,7 +161,6 @@ class App:
                 return html(P.login_page(False, "Mot de passe incorrect."))
             return html(P.login_page(False))
 
-        cookie = headers.get("cookie", "")
         for sid, csrf in self.sessions:
             if "sid=" + sid in cookie:
                 self._cur, self.csrf = sid, csrf
@@ -157,7 +169,7 @@ class App:
             return redirect("/login")                           # pas connecte
 
         if method == "POST" and form.get("csrf") != self.csrf:
-            return html(P.page("Erreur", "<p>Formulaire expiré. <a href='/'>Retour</a></p>"), 403)
+            return html(P.page(P.t("Erreur"), "<p>" + P.t("Formulaire expiré.") + " <a href='/'>" + P.t("Retour") + "</a></p>"), 403)
 
         return self._route(method, path, q, form)
 
@@ -208,12 +220,12 @@ class App:
         if path == "/logout":
             self.sessions = [x for x in self.sessions if x[0] != self._cur]
             return redirect("/login")
-        return html(P.page("Page introuvable", "<p><a href='/'>Retour</a></p>"), 404)
+        return html(P.page(P.t("Page introuvable"), "<p><a href='/'>" + P.t("Retour") + "</a></p>"), 404)
 
     def _unlock_text(self):
         if self.unlock_until > time.time():
             t = time.localtime(self.unlock_until)
-            return "Déverrouillé jusqu'à %02d:%02d" % (t[3], t[4])
+            return "%s %02d:%02d" % (P.t("Déverrouillé jusqu'à"), t[3], t[4])
         return ""
 
     def _add_med(self, f):
@@ -223,8 +235,8 @@ class App:
             slot = 0
         name = f.get("name", "").strip()[:30]
         meds = self.s.data["meds"]
-        color = f.get("color", "")
-        if (not name or not 1 <= slot <= WEB_SLOTS or color not in COLORS
+        color = "rouge"                                     # tous les compartiments sont rouges
+        if (not name or not 1 <= slot <= WEB_SLOTS
                 or any(m["slot"] == slot for m in meds)):
             return redirect("/meds?err=1")
         meds.append({"name": name, "dose": f.get("dose", "").strip()[:20], "color": color, "slot": slot})

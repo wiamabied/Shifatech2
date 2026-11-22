@@ -56,11 +56,57 @@ class PagesTest(unittest.TestCase):
         self.assertIn("demain", html)
         self.assertIn("class='r p'", html)          # prise passee estompee
 
-    def test_selecteurs_couleur_et_compartiment(self):
+    def test_compartiments_rouges_et_numerotes(self):
         html = P.meds_page([], "t")
-        self.assertEqual(html.count("name='color'"), len(P.COLORS))
-        self.assertEqual(html.count("name='slot'"), P.WEB_SLOTS)
         self.assertIn("<details class='c' open>", html)   # ouvert quand il n'y a encore aucun medicament
+        self.assertNotIn("name='color'", html)               # plus de choix de couleur
+        self.assertEqual(html.count("name='slot'"), P.WEB_SLOTS)
+        for i in range(1, P.WEB_SLOTS + 1):
+            self.assertIn("<span>Compartiment %d</span>" % i, html)
+        med = {"name": "A", "dose": "", "color": "bleu", "slot": 2}   # ancienne donnee : s'affiche quand meme en rouge
+        html = P.meds_page([med], "t")
+        self.assertIn("Compartiment 2", html)
+        self.assertIn(P.RED, html)
+        self.assertNotIn("#1e88e5", html)
+
+    def test_arabe_rtl_et_numeros(self):
+        med = {"name": "A", "dose": "", "color": "rouge", "slot": 3}
+        try:
+            P.set_context("ar", "/meds")
+            html = P.meds_page([med], "t")
+            self.assertIn("dir='rtl'", html)
+            self.assertIn("lang='ar'", html)
+            self.assertIn("الحجرة 3", html)
+            self.assertIn("الأدوية", html)
+            self.assertEqual(P.fmt_delta(125), "خلال 2 س 05")
+            self.assertEqual(P.fmt_delta(0), "الآن")
+        finally:
+            P.set_context("fr")
+        self.assertIn("dir='ltr'", P.meds_page([med], "t"))
+
+    def test_selecteur_de_langue(self):
+        html = P.info_page("A")
+        self.assertIn("/lang?l=fr", html)
+        self.assertIn("/lang?l=ar", html)
+
+    def test_chaque_texte_francais_a_une_traduction(self):
+        """Toutes les pages, en arabe, ne doivent plus contenir de phrase francaise connue."""
+        med = {"name": "A", "dose": "", "color": "rouge", "slot": 1}
+        try:
+            P.set_context("ar", "/")
+            pages = [P.login_page(True), P.login_page(False, "Mot de passe incorrect."),
+                     P.home_page([med], ["Deverrouillage urgence"], "", "t", (5, "08:00", med, True), "Bonsoir",
+                                 [("08:00", med, False)]),
+                     P.home_page([], [], csrf="t"), P.home_page([med], [], csrf="t"),
+                     P.meds_page([med], "t", "", [], True), P.doses_page(med, ["08:00"], "t"),
+                     P.options_page({}, "t"), P.heure_page("t", "", "10:00"), P.password_page("t"),
+                     P.info_page("A"), P.fiche_page([med], [])]
+            for html in pages:
+                for fr in ("Médicament", "Compartiment", "Retour", "Supprimer", "Ajouter", "Horaires",
+                           "Accueil", "Enregistrer", "Prototype", "Valider", "Alarme"):
+                    self.assertNotIn(fr, html)
+        finally:
+            P.set_context("fr")
 
     def test_navigation_active(self):
         self.assertIn("<a href='/meds' class='on'>", P.meds_page([], "t"))
